@@ -1,0 +1,6 @@
+Match seed: 83601
+
+The winner is: B - CoffeeRef
+
+A - BotSuper - score:3 health:0
+B - CoffeeRef - score:15 health:0
