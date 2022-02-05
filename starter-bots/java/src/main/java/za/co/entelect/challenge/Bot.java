@@ -51,6 +51,15 @@ public class Bot {
             return ACCELERATE;
         }
 
+        if (blocks.contains(Terrain.WALL) || nextBlocks.contains(Terrain.WALL)) {
+            if (myCar.position.lane >= 2) {
+                return TURN_LEFT;
+            } else {
+                return TURN_RIGHT;
+            }
+        }
+
+
         if (blocks.contains(Terrain.MUD) || nextBlocks.contains(Terrain.WALL)) {
             if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
                 return LIZARD;
@@ -71,6 +80,9 @@ public class Bot {
             }
             if (hasPowerUp(PowerUps.EMP, myCar.powerups)) {
                 return EMP;
+            }
+            if (hasPowerUp(PowerUps.TWEET, myCar.powerups)) {
+                return new TweetCommand(opponent.position.lane, opponent.position.block + 20);
             }
         }
 
