@@ -51,6 +51,14 @@ public class Bot {
             return ACCELERATE;
         }
 
+        if (myCar.position.block > opponent.position.block) {
+            if (myCar.position.lane < opponent.position.lane) {
+                return TURN_RIGHT;
+            } else {
+                return TURN_LEFT;
+            }
+        }
+
         if (blocks.contains(Terrain.WALL) || nextBlocks.contains(Terrain.WALL)) {
             if (myCar.position.lane >= 2) {
                 return TURN_LEFT;
