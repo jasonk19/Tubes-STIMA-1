@@ -13,6 +13,7 @@ import static java.lang.Math.max;
 
 public class Bot {
 
+    private static final int initSpeed = 5;
     private static final int maxSpeed = 9;
     private static final int maxBoostSpeed = 15;
     private final List<Command> directionList = new ArrayList<>();
@@ -73,20 +74,27 @@ public class Bot {
         int startBlock = map.get(0)[0].position.block;
 
         Lane[] laneList = map.get(lane - 1);
-        if (myCar.speed <= 9) {
+        if (myCar.speed <= 9 && myCar.speed >= 5) {
             for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxSpeed; i++) {
                 if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                     break;
                 }
 
                 blocks.add(laneList[i].terrain);
-
             }
         } else if (myCar.speed == 15) {
             for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxBoostSpeed; i++) {
                 if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                     break;
                 }
+                blocks.add(laneList[i].terrain);
+            }
+        } else if (myCar.speed < 5) {
+            for (int i = max(block - startBlock, 0); i <= block - startBlock + 4; i++) {
+                if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
+                    break;
+                }
+
                 blocks.add(laneList[i].terrain);
             }
         }
@@ -103,8 +111,20 @@ public class Bot {
         return count;
     }
 
+    private boolean obstacles(List<Object> blocks) {
+        return blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.OIL_SPILL) || blocks.contains(Terrain.CYBERTRUCK);
+    }
+
+    private boolean speedPowerUp(List<Object> blocks) {
+        return blocks.contains(Terrain.BOOST) || blocks.contains(Terrain.LIZARD);
+    }
+
+    private boolean otherPowerUp(List<Object> blocks) {
+        return blocks.contains(Terrain.TWEET) || blocks.contains(Terrain.OIL_POWER) || blocks.contains(Terrain.EMP);
+    }
+
     private Command changeLaneOnBoost(List<Object> blocks) {
-        if (blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.CYBERTRUCK) || blocks.contains(Terrain.OIL_SPILL)) {
+        if (obstacles(blocks)) {
 
             if (countTerrain(blocks, Terrain.MUD) == 1 || blocks.contains(Terrain.WALL)) {
                 if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
@@ -115,6 +135,9 @@ public class Bot {
 
             if (myCar.position.lane == 1) {
                 List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
+                if (!obstacles(blocksRight)) {
+                    return TURN_RIGHT;
+                }
                 if (blocksRight.contains(Terrain.MUD)) {
                     if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksRight, Terrain.MUD)) {
                         if (blocksRight.contains(Terrain.WALL)) {
@@ -129,6 +152,9 @@ public class Bot {
             }
             if (myCar.position.lane == 4) {
                 List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
+                if (!obstacles(blocksLeft)) {
+                    return TURN_LEFT;
+                }
                 if (blocksLeft.contains(Terrain.MUD)) {
                     if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksLeft, Terrain.MUD)) {
                         if (blocksLeft.contains(Terrain.WALL)) {
@@ -146,10 +172,10 @@ public class Bot {
                 List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
                 List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
 
-                if (blocksRight.contains(Terrain.WALL) || blocksRight.contains(Terrain.MUD) || blocksRight.contains(Terrain.CYBERTRUCK) || blocksRight.contains(Terrain.OIL_SPILL)) {
+                if (!obstacles(blocksLeft)) {
                     return TURN_LEFT;
                 }
-                if (blocksLeft.contains(Terrain.WALL) || blocksLeft.contains(Terrain.MUD) || blocksLeft.contains(Terrain.CYBERTRUCK) || blocksLeft.contains(Terrain.OIL_SPILL)) {
+                if (!obstacles(blocksRight)) {
                     return TURN_RIGHT;
                 }
                 int i = random.nextInt(directionList.size());
@@ -172,7 +198,7 @@ public class Bot {
         }
 
         if (hasPowerUp(PowerUps.BOOST, myCar.powerups)) {
-            if (myCar.boosting) {
+            if (myCar.boosting || obstacles(blocks)) {
                 return changeLaneOnBoost(blocks);
             } else {
                 return BOOST;
@@ -180,12 +206,12 @@ public class Bot {
         }
 
         // Accelerate if too slow
-        if (myCar.speed <= 3) {
+        if (myCar.speed == 0) {
             return ACCELERATE;
         }
 
         // Avoidance Logic
-        if (blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.CYBERTRUCK) || blocks.contains(Terrain.OIL_SPILL)) {
+        if (obstacles(blocks)) {
 
             if (countTerrain(blocks, Terrain.MUD) == 1 || blocks.contains(Terrain.WALL)) {
                 if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
@@ -196,6 +222,12 @@ public class Bot {
 
             if (myCar.position.lane == 1) {
                 List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
+                if (!obstacles(blocksRight)) {
+                    return TURN_RIGHT;
+                }
+                if (blocksRight.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
+                    return ACCELERATE;
+                }
                 if (blocksRight.contains(Terrain.MUD)) {
                     if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksRight, Terrain.MUD)) {
                         if (blocksRight.contains(Terrain.WALL)) {
@@ -206,10 +238,15 @@ public class Bot {
                         return ACCELERATE;
                     }
                 }
-                return TURN_RIGHT;
             }
             if (myCar.position.lane == 4) {
                 List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
+                if (!obstacles(blocksLeft)) {
+                    return TURN_LEFT;
+                }
+                if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
+                    return ACCELERATE;
+                }
                 if (blocksLeft.contains(Terrain.MUD)) {
                     if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksLeft, Terrain.MUD)) {
                         if (blocksLeft.contains(Terrain.WALL)) {
@@ -227,15 +264,26 @@ public class Bot {
                 List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
                 List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
 
-                if (blocksRight.contains(Terrain.WALL) || blocksRight.contains(Terrain.MUD) || blocksRight.contains(Terrain.CYBERTRUCK) || blocksRight.contains(Terrain.OIL_SPILL)) {
+                if (!obstacles(blocksLeft)) {
                     return TURN_LEFT;
                 }
-                if (blocksLeft.contains(Terrain.WALL) || blocksLeft.contains(Terrain.MUD) || blocksLeft.contains(Terrain.CYBERTRUCK) || blocksLeft.contains(Terrain.OIL_SPILL)) {
+                if (!obstacles(blocksRight)) {
+                    return TURN_RIGHT;
+                }
+                if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
+                    return ACCELERATE;
+                } else if (!blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
+                    return TURN_LEFT;
+                } else if (blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && !blocksRight.contains(Terrain.WALL)) {
                     return TURN_RIGHT;
                 }
                 int i = random.nextInt(directionList.size());
                 return directionList.get(i);
             }
+        }
+
+        if (myCar.speed <= 5) {
+            return ACCELERATE;
         }
 
         // Check if powerups too many, then use powerup
