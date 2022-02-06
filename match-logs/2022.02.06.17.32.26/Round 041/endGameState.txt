@@ -1,0 +1,6 @@
+Match seed: 103593
+
+The winner is: B - JuaraEmpat
+
+A - BotSuper - score:62 health:0
+B - JuaraEmpat - score:174 health:0
