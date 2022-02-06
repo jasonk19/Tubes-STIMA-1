@@ -1,3 +1,0 @@
-Command: USE_LIZARD
-Execution time: 59ms
-Exception: null

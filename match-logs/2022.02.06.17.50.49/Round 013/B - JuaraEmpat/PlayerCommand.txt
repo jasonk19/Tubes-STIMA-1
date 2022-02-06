@@ -1,3 +1,0 @@
-Command: USE_BOOST
-Execution time: 46ms
-Exception: null
