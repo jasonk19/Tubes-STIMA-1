@@ -64,6 +64,10 @@ public class Bot {
         return false;
     }
 
+    private int getMaxLane() {
+        return gameState.lanes.size();
+    }
+
     /**
      * Returns map of blocks and the objects in the for the current lanes, returns the amount of blocks that can be
      * traversed at max speed.
@@ -99,6 +103,39 @@ public class Bot {
             }
         }
         return blocks;
+    }
+
+    private List<Object> getManyBlocks(int lane, int block) {
+        List<Lane[]> map = gameState.lanes;
+        List<Object> blocks = new ArrayList<>();
+        int startBlock = map.get(0)[0].position.block;
+
+        Lane[] laneList = map.get(lane - 1);
+        for (int i = max(block - startBlock, 0); i <= block - startBlock + 16; i++) {
+            if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
+                break;
+            }
+
+            blocks.add(laneList[i].terrain);
+        }
+
+        return blocks;
+    }
+
+    private boolean isOppInRange(int lane, int block) {
+        int range = opponent.position.block - myCar.position.block;
+        if (myCar.speed <= 9) {
+            if (range <= 10) {
+                return true;
+            }
+        }
+        if (myCar.speed == 15) {
+            if (range <= 16) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private int countTerrain(List<Object> blocks, Terrain terrainToCheck) {
@@ -138,6 +175,9 @@ public class Bot {
                 if (!obstacles(blocksRight)) {
                     return TURN_RIGHT;
                 }
+                if (blocksRight.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
+                    return ACCELERATE;
+                }
                 if (blocksRight.contains(Terrain.MUD)) {
                     if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksRight, Terrain.MUD)) {
                         if (blocksRight.contains(Terrain.WALL)) {
@@ -148,12 +188,14 @@ public class Bot {
                         return ACCELERATE;
                     }
                 }
-                return TURN_RIGHT;
             }
-            if (myCar.position.lane == 4) {
+            if (myCar.position.lane == getMaxLane()) {
                 List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
                 if (!obstacles(blocksLeft)) {
                     return TURN_LEFT;
+                }
+                if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
+                    return ACCELERATE;
                 }
                 if (blocksLeft.contains(Terrain.MUD)) {
                     if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksLeft, Terrain.MUD)) {
@@ -168,7 +210,7 @@ public class Bot {
                 return TURN_LEFT;
 
             }
-            if (myCar.position.lane == 2 || myCar.position.lane == 3) {
+            if (myCar.position.lane > 1 || myCar.position.lane < getMaxLane()) {
                 List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
                 List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
 
@@ -176,6 +218,13 @@ public class Bot {
                     return TURN_LEFT;
                 }
                 if (!obstacles(blocksRight)) {
+                    return TURN_RIGHT;
+                }
+                if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
+                    return ACCELERATE;
+                } else if (!blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
+                    return TURN_LEFT;
+                } else if (blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && !blocksRight.contains(Terrain.WALL)) {
                     return TURN_RIGHT;
                 }
                 int i = random.nextInt(directionList.size());
@@ -193,7 +242,7 @@ public class Bot {
         List<Object> nextBlock = blocks.subList(0,1);
 
         // Fix Car
-        if (myCar.damage == 5) {
+        if (myCar.damage >= 2) {
             return FIX;
         }
 
@@ -239,7 +288,7 @@ public class Bot {
                     }
                 }
             }
-            if (myCar.position.lane == 4) {
+            if (myCar.position.lane == getMaxLane()) {
                 List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
                 if (!obstacles(blocksLeft)) {
                     return TURN_LEFT;
@@ -260,7 +309,7 @@ public class Bot {
                 return TURN_LEFT;
 
             }
-            if (myCar.position.lane == 2 || myCar.position.lane == 3) {
+            if (myCar.position.lane > 1 || myCar.position.lane < getMaxLane()) {
                 List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
                 List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
 
