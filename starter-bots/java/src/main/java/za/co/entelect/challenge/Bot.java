@@ -3,6 +3,7 @@ package za.co.entelect.challenge;
 import za.co.entelect.challenge.command.*;
 import za.co.entelect.challenge.entities.*;
 import za.co.entelect.challenge.enums.PowerUps;
+import za.co.entelect.challenge.enums.State;
 import za.co.entelect.challenge.enums.Terrain;
 
 import java.util.*;
@@ -78,7 +79,7 @@ public class Bot {
         int startBlock = map.get(0)[0].position.block;
 
         Lane[] laneList = map.get(lane - 1);
-        if (myCar.speed <= 9 && myCar.speed >= 5) {
+        if (myCar.speed <= 9) {
             for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxSpeed + 1; i++) {
                 if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                     break;
@@ -86,22 +87,15 @@ public class Bot {
 
                 blocks.add(laneList[i].terrain);
             }
-        } else if (myCar.speed == 15) {
+        } else if (myCar.speed == 15 || myCar.state.equals(State.USED_BOOST)) {
             for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxBoostSpeed + 1; i++) {
                 if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                     break;
                 }
                 blocks.add(laneList[i].terrain);
             }
-        } else if (myCar.speed < 5) {
-            for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.initSpeed; i++) {
-                if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
-                    break;
-                }
-
-                blocks.add(laneList[i].terrain);
-            }
         }
+
         return blocks;
     }
 
@@ -149,8 +143,22 @@ public class Bot {
         return count;
     }
 
+    private boolean hasCyberTruck(int lane) {
+        int block = myCar.position.block;
+        List<Lane[]> map = gameState.lanes;
+        int startBlock = map.get(0)[0].position.block;
+
+        Lane[] laneList = map.get(lane - 1);
+        for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxSpeed; i++) {
+            if (laneList[i].isOccupiedByCyberTruck) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean obstacles(List<Object> blocks) {
-        return blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.OIL_SPILL) || blocks.contains(Terrain.CYBERTRUCK);
+        return blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.OIL_SPILL) || hasCyberTruck(myCar.position.lane);
     }
 
     private boolean speedPowerUp(List<Object> blocks) {
@@ -175,6 +183,12 @@ public class Bot {
             List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
             if (!obstacles(blocksRight)) {
                 return TURN_RIGHT;
+            }
+            if (hasCyberTruck(myCar.position.lane)) {
+                return TURN_RIGHT;
+            }
+            if (hasCyberTruck(myCar.position.lane + 1)) {
+                return ACCELERATE;
             }
             if (blocksRight.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
                 return ACCELERATE;
@@ -201,6 +215,12 @@ public class Bot {
             List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
             if (!obstacles(blocksLeft)) {
                 return TURN_LEFT;
+            }
+            if (hasCyberTruck(myCar.position.lane)) {
+                return TURN_LEFT;
+            }
+            if (hasCyberTruck(myCar.position.lane - 1)) {
+                return ACCELERATE;
             }
             if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
                 return ACCELERATE;
@@ -231,6 +251,15 @@ public class Bot {
                 return TURN_LEFT;
             }
             if (!obstacles(blocksRight)) {
+                return TURN_RIGHT;
+            }
+            if (!hasCyberTruck(myCar.position.lane)) {
+                return ACCELERATE;
+            }
+            if (!hasCyberTruck(myCar.position.lane - 1) && hasCyberTruck(myCar.position.lane + 1)) {
+                return TURN_LEFT;
+            }
+            if (hasCyberTruck(myCar.position.lane - 1) && !hasCyberTruck(myCar.position.lane + 1)) {
                 return TURN_RIGHT;
             }
             if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
@@ -265,7 +294,7 @@ public class Bot {
 
         // Mengambil block di depan dalam jangkauan speed mobil
         List<Object> blocks = getBlocksInFront(myCar.position.lane, myCar.position.block);
-        List<Object> nextBlock = blocks.subList(0,1);
+        List<Object> nextBlocks = blocks.subList(0, 1);
 
         // Fix Car
         if (myCar.damage >= 2) {

@@ -23,6 +23,4 @@ public enum Terrain {
     TWEET,
     @SerializedName("9")
     EMP,
-    @SerializedName("100")
-    CYBERTRUCK,
 }
