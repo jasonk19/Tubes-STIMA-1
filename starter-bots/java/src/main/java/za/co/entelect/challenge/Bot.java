@@ -240,6 +240,20 @@ public class Bot {
             } else if (blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && !blocksRight.contains(Terrain.WALL)) {
                 return TURN_RIGHT;
             }
+
+            if (countTerrain(blocksLeft, Terrain.MUD) > countTerrain(blocksRight, Terrain.MUD)) {
+                return TURN_RIGHT;
+            }
+
+            if (countTerrain(blocksLeft, Terrain.MUD) < countTerrain(blocksRight,Terrain.MUD)) {
+                return TURN_LEFT;
+            }
+
+            if (isOppInRange(myCar.position.lane, myCar.position.block)) {
+                int i = random.nextInt(directionList.size());
+                return directionList.get(i);
+            }
+
             int i = random.nextInt(directionList.size());
             return directionList.get(i);
         }
