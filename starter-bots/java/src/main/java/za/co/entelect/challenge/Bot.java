@@ -79,7 +79,7 @@ public class Bot {
 
         Lane[] laneList = map.get(lane - 1);
         if (myCar.speed <= 9 && myCar.speed >= 5) {
-            for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxSpeed; i++) {
+            for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxSpeed + 1; i++) {
                 if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                     break;
                 }
@@ -87,14 +87,14 @@ public class Bot {
                 blocks.add(laneList[i].terrain);
             }
         } else if (myCar.speed == 15) {
-            for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxBoostSpeed; i++) {
+            for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.maxBoostSpeed + 1; i++) {
                 if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                     break;
                 }
                 blocks.add(laneList[i].terrain);
             }
         } else if (myCar.speed < 5) {
-            for (int i = max(block - startBlock, 0); i <= block - startBlock + 4; i++) {
+            for (int i = max(block - startBlock, 0); i <= block - startBlock + Bot.initSpeed; i++) {
                 if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
                     break;
                 }
@@ -124,17 +124,18 @@ public class Bot {
 
     private boolean isOppInRange(int lane, int block) {
         int range = opponent.position.block - myCar.position.block;
-        if (myCar.speed <= 9) {
-            if (range <= 10) {
-                return true;
+        if (myCar.position.lane == opponent.position.lane) {
+            if (myCar.speed <= 9) {
+                if (range <= 10) {
+                    return true;
+                }
+            }
+            if (myCar.speed == 15) {
+                if (range <= 16) {
+                    return true;
+                }
             }
         }
-        if (myCar.speed == 15) {
-            if (range <= 16) {
-                return true;
-            }
-        }
-
         return false;
     }
 
@@ -160,76 +161,87 @@ public class Bot {
         return blocks.contains(Terrain.TWEET) || blocks.contains(Terrain.OIL_POWER) || blocks.contains(Terrain.EMP);
     }
 
-    private Command changeLaneOnBoost(List<Object> blocks) {
-        if (obstacles(blocks)) {
+    // Avoiding logic when there is obstacles in front
+    private Command changeLane(List<Object> blocks) {
 
-            if (countTerrain(blocks, Terrain.MUD) == 1 || blocks.contains(Terrain.WALL)) {
-                if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
-                    return LIZARD;
-                }
+        if (countTerrain(blocks, Terrain.MUD) == 1 || blocks.contains(Terrain.WALL)) {
+            if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
+                return LIZARD;
             }
+        }
 
 
-            if (myCar.position.lane == 1) {
-                List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
-                if (!obstacles(blocksRight)) {
+        if (myCar.position.lane == 1) {
+            List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
+            if (!obstacles(blocksRight)) {
+                return TURN_RIGHT;
+            }
+            if (blocksRight.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
+                return ACCELERATE;
+            }
+            if (!blocksRight.contains(Terrain.WALL) && blocks.contains(Terrain.WALL)){
+                return TURN_RIGHT;
+            }
+            if (blocksRight.contains(Terrain.MUD)) {
+                if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksRight, Terrain.MUD)) {
+                    if (blocksRight.contains(Terrain.WALL)) {
+                        return ACCELERATE;
+                    }
                     return TURN_RIGHT;
-                }
-                if (blocksRight.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
+                } else {
                     return ACCELERATE;
-                }
-                if (blocksRight.contains(Terrain.MUD)) {
-                    if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksRight, Terrain.MUD)) {
-                        if (blocksRight.contains(Terrain.WALL)) {
-                            return ACCELERATE;
-                        }
-                        return TURN_RIGHT;
-                    } else {
-                        return ACCELERATE;
-                    }
                 }
             }
-            if (myCar.position.lane == getMaxLane()) {
-                List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
-                if (!obstacles(blocksLeft)) {
-                    return TURN_LEFT;
-                }
-                if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
-                    return ACCELERATE;
-                }
-                if (blocksLeft.contains(Terrain.MUD)) {
-                    if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksLeft, Terrain.MUD)) {
-                        if (blocksLeft.contains(Terrain.WALL)) {
-                            return ACCELERATE;
-                        }
-                        return TURN_LEFT;
-                    } else {
-                        return ACCELERATE;
-                    }
-                }
+            if (isOppInRange(myCar.position.lane, myCar.position.block)) {
+                return TURN_RIGHT;
+            }
+            return TURN_RIGHT;
+        }
+        if (myCar.position.lane == getMaxLane()) {
+            List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
+            if (!obstacles(blocksLeft)) {
                 return TURN_LEFT;
-
             }
-            if (myCar.position.lane > 1 || myCar.position.lane < getMaxLane()) {
-                List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
-                List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
-
-                if (!obstacles(blocksLeft)) {
+            if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
+                return ACCELERATE;
+            }
+            if (!blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL)){
+                return TURN_LEFT;
+            }
+            if (blocksLeft.contains(Terrain.MUD)) {
+                if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksLeft, Terrain.MUD)) {
+                    if (blocksLeft.contains(Terrain.WALL)) {
+                        return ACCELERATE;
+                    }
                     return TURN_LEFT;
-                }
-                if (!obstacles(blocksRight)) {
-                    return TURN_RIGHT;
-                }
-                if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
+                } else {
                     return ACCELERATE;
-                } else if (!blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
-                    return TURN_LEFT;
-                } else if (blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && !blocksRight.contains(Terrain.WALL)) {
-                    return TURN_RIGHT;
                 }
-                int i = random.nextInt(directionList.size());
-                return directionList.get(i);
             }
+            if (isOppInRange(myCar.position.lane, myCar.position.block)) {
+                return TURN_LEFT;
+            }
+            return TURN_LEFT;
+        }
+        if (myCar.position.lane > 1 || myCar.position.lane < getMaxLane()) {
+            List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
+            List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
+
+            if (!obstacles(blocksLeft)) {
+                return TURN_LEFT;
+            }
+            if (!obstacles(blocksRight)) {
+                return TURN_RIGHT;
+            }
+            if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
+                return ACCELERATE;
+            } else if (!blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
+                return TURN_LEFT;
+            } else if (blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && !blocksRight.contains(Terrain.WALL)) {
+                return TURN_RIGHT;
+            }
+            int i = random.nextInt(directionList.size());
+            return directionList.get(i);
         }
         return ACCELERATE;
     }
@@ -248,10 +260,11 @@ public class Bot {
 
         if (hasPowerUp(PowerUps.BOOST, myCar.powerups)) {
             if (myCar.boosting || obstacles(blocks)) {
-                return changeLaneOnBoost(blocks);
-            } else {
-                return BOOST;
+                if (obstacles(blocks)) {
+                    return changeLane(blocks);
+                }
             }
+            return BOOST;
         }
 
         // Accelerate if too slow
@@ -259,76 +272,8 @@ public class Bot {
             return ACCELERATE;
         }
 
-        // Avoidance Logic
         if (obstacles(blocks)) {
-
-            if (countTerrain(blocks, Terrain.MUD) == 1 || blocks.contains(Terrain.WALL)) {
-                if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
-                    return LIZARD;
-                }
-            }
-
-
-            if (myCar.position.lane == 1) {
-                List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
-                if (!obstacles(blocksRight)) {
-                    return TURN_RIGHT;
-                }
-                if (blocksRight.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
-                    return ACCELERATE;
-                }
-                if (blocksRight.contains(Terrain.MUD)) {
-                    if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksRight, Terrain.MUD)) {
-                        if (blocksRight.contains(Terrain.WALL)) {
-                            return ACCELERATE;
-                        }
-                        return TURN_RIGHT;
-                    } else {
-                        return ACCELERATE;
-                    }
-                }
-            }
-            if (myCar.position.lane == getMaxLane()) {
-                List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
-                if (!obstacles(blocksLeft)) {
-                    return TURN_LEFT;
-                }
-                if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL)) {
-                    return ACCELERATE;
-                }
-                if (blocksLeft.contains(Terrain.MUD)) {
-                    if (countTerrain(blocks, Terrain.MUD) > countTerrain(blocksLeft, Terrain.MUD)) {
-                        if (blocksLeft.contains(Terrain.WALL)) {
-                            return ACCELERATE;
-                        }
-                        return TURN_LEFT;
-                    } else {
-                        return ACCELERATE;
-                    }
-                }
-                return TURN_LEFT;
-
-            }
-            if (myCar.position.lane > 1 || myCar.position.lane < getMaxLane()) {
-                List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
-                List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
-
-                if (!obstacles(blocksLeft)) {
-                    return TURN_LEFT;
-                }
-                if (!obstacles(blocksRight)) {
-                    return TURN_RIGHT;
-                }
-                if (blocksLeft.contains(Terrain.WALL) && !blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
-                    return ACCELERATE;
-                } else if (!blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && blocksRight.contains(Terrain.WALL)) {
-                    return TURN_LEFT;
-                } else if (blocksLeft.contains(Terrain.WALL) && blocks.contains(Terrain.WALL) && !blocksRight.contains(Terrain.WALL)) {
-                    return TURN_RIGHT;
-                }
-                int i = random.nextInt(directionList.size());
-                return directionList.get(i);
-            }
+            return changeLane(blocks);
         }
 
         if (myCar.speed <= 5) {
@@ -338,10 +283,8 @@ public class Bot {
         // Check if powerups too many, then use powerup
 
         if (hasPowerUp(PowerUps.TWEET, myCar.powerups)) {
-            if (myCar.position.lane != opponent.position.lane) {
-                if (myCar.position.block > opponent.position.block) {
-                    return new TweetCommand(opponent.position.lane, opponent.position.block + opponent.speed + 3);
-                }
+            if (myCar.position.block > opponent.position.block) {
+                return new TweetCommand(opponent.position.lane, opponent.position.block + opponent.speed + 2);
             }
         }
 
