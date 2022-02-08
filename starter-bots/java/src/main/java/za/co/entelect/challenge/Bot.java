@@ -153,12 +153,15 @@ public class Bot {
             if (laneList[i].isOccupiedByCyberTruck) {
                 return true;
             }
+            if (laneList[i] == null || laneList[i].terrain == Terrain.FINISH) {
+                return false;
+            }
         }
         return false;
     }
 
     private boolean obstacles(List<Object> blocks) {
-        return blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.OIL_SPILL) || hasCyberTruck(myCar.position.lane);
+        return blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.OIL_SPILL);
     }
 
     private boolean speedPowerUp(List<Object> blocks) {
@@ -181,7 +184,7 @@ public class Bot {
 
         if (myCar.position.lane == 1) {
             List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
-            if (!obstacles(blocksRight)) {
+            if (!obstacles(blocksRight) && !hasCyberTruck(myCar.position.lane + 1)) {
                 return TURN_RIGHT;
             }
             if (hasCyberTruck(myCar.position.lane)) {
@@ -213,7 +216,7 @@ public class Bot {
         }
         if (myCar.position.lane == getMaxLane()) {
             List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
-            if (!obstacles(blocksLeft)) {
+            if (!obstacles(blocksLeft) && !hasCyberTruck(myCar.position.lane - 1)) {
                 return TURN_LEFT;
             }
             if (hasCyberTruck(myCar.position.lane)) {
@@ -247,10 +250,10 @@ public class Bot {
             List<Object> blocksRight = getBlocksInFront(myCar.position.lane + 1, myCar.position.block);
             List<Object> blocksLeft = getBlocksInFront(myCar.position.lane - 1, myCar.position.block);
 
-            if (!obstacles(blocksLeft)) {
+            if (!obstacles(blocksLeft) && !hasCyberTruck(myCar.position.lane - 1)) {
                 return TURN_LEFT;
             }
-            if (!obstacles(blocksRight)) {
+            if (!obstacles(blocksRight) && !hasCyberTruck(myCar.position.lane + 1)) {
                 return TURN_RIGHT;
             }
             if (!hasCyberTruck(myCar.position.lane)) {
@@ -297,17 +300,8 @@ public class Bot {
         List<Object> nextBlocks = blocks.subList(0, 1);
 
         // Fix Car
-        if (myCar.damage >= 2) {
+        if (myCar.damage >= 3) {
             return FIX;
-        }
-
-        if (hasPowerUp(PowerUps.BOOST, myCar.powerups)) {
-            if (myCar.boosting || obstacles(blocks)) {
-                if (obstacles(blocks)) {
-                    return changeLane(blocks);
-                }
-            }
-            return BOOST;
         }
 
         // Accelerate if too slow
@@ -315,20 +309,20 @@ public class Bot {
             return ACCELERATE;
         }
 
-        if (obstacles(blocks)) {
+        if (obstacles(blocks) || hasCyberTruck(myCar.position.lane) || myCar.boosting) {
             return changeLane(blocks);
+        }
+
+        if (hasPowerUp(PowerUps.BOOST, myCar.powerups)) {
+            return BOOST;
         }
 
         if (myCar.speed <= 5) {
             return ACCELERATE;
         }
 
-        // Check if powerups too many, then use powerup
-
         if (hasPowerUp(PowerUps.TWEET, myCar.powerups)) {
-            if (myCar.position.block > opponent.position.block) {
-                return new TweetCommand(opponent.position.lane, opponent.position.block + opponent.speed + 2);
-            }
+            return new TweetCommand(opponent.position.lane, opponent.position.block + opponent.speed + 2);
         }
 
 
