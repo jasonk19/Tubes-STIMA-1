@@ -160,6 +160,10 @@ public class Bot {
         return false;
     }
 
+    private boolean checkEmpRange() {
+        return myCar.position.lane == opponent.position.lane || opponent.position.lane - myCar.position.lane == 1 || myCar.position.lane - opponent.position.lane == 1;
+    }
+
     private boolean obstacles(List<Object> blocks) {
         return blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.OIL_SPILL);
     }
@@ -392,7 +396,9 @@ public class Bot {
 
         if(myCar.position.block < opponent.position.block) {
             if (hasPowerUp(PowerUps.EMP, myCar.powerups)) {
-                return EMP;
+                if (checkEmpRange()) {
+                    return EMP;
+                }
             }
         }
 
