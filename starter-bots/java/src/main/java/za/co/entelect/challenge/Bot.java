@@ -407,7 +407,7 @@ public class Bot {
 
         if (myCar.position.block > opponent.position.block) {
             if (hasPowerUp(PowerUps.TWEET, myCar.powerups)) {
-                return new TweetCommand(opponent.position.lane, opponent.position.block + opponent.speed + 2);
+                return new TweetCommand(opponent.position.lane, opponent.position.block + opponent.speed + 9);
             }
 
             if (hasPowerUp(PowerUps.OIL, myCar.powerups)) {
