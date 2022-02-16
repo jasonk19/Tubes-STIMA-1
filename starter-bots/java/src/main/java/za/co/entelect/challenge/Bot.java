@@ -380,16 +380,18 @@ public class Bot {
             return ACCELERATE;
         }
 
-        if (obstacles(blocks) || hasCyberTruck(myCar.position.lane) || myCar.boosting) {
+        if (obstacles(blocks) || hasCyberTruck(myCar.position.lane)) {
             return changeLane(blocks);
         }
 
         if (hasPowerUp(PowerUps.BOOST, myCar.powerups)) {
             if (!obstacles(manyBlocks) && !hasCyberTruck(myCar.position.lane)) {
-                if (myCar.damage == 0) {
+                if (!myCar.boosting) {
+                    if (myCar.damage != 0) {
+                        return FIX;
+                    }
                     return BOOST;
                 }
-                return FIX;
             }
         }
 
