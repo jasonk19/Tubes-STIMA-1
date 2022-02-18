@@ -186,8 +186,8 @@ public class Bot {
 
     private int getDamageBlocks(List<Object> blocks, int lane){
         int damage = 0;
-        damage += countTerrain(blocks, Terrain.OIL_SPILL) * 1;
-        damage += countTerrain(blocks, Terrain.MUD) * 1;
+        damage += countTerrain(blocks, Terrain.OIL_SPILL);
+        damage += countTerrain(blocks, Terrain.MUD);
         damage += countTerrain(blocks, Terrain.WALL) * 2;
         if (hasCyberTruck(lane)){
             damage += 2;
