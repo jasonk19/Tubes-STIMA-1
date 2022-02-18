@@ -332,7 +332,7 @@ public class Bot {
                 }
             }
             if (definiteCrash(getMaxLane())){ // Greedy by Damage 
-                int damageLeft = getDamageBlocks(blocksLeft, myCar.position.lane + 1);
+                int damageLeft = getDamageBlocks(blocksLeft, myCar.position.lane - 1);
                 int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
                 if (damageLeft < damageStraight){
                     return TURN_LEFT;
