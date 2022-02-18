@@ -119,6 +119,8 @@ public class Bot {
     }
 
     private boolean isOppInRange() {
+        // Return true apabila bot musuh berada dalam jarak yang dapat dikejar 
+        // False jika tidak
         int range = opponent.position.block - myCar.position.block;
         if (myCar.position.lane == opponent.position.lane) {
             if (myCar.speed <= 9) {
@@ -136,6 +138,8 @@ public class Bot {
     }
 
     private int countTerrain(List<Object> blocks, Terrain terrainToCheck) {
+        // Menghitung jumlah terrain spesifik pada suatu blocks
+        // terrainToCheck dapat bernilai OIL_SPILL, MUD, WALL, dll 
         int count = 0;
         for (Object block: blocks) {
             if (block.equals(terrainToCheck)) {
@@ -146,6 +150,8 @@ public class Bot {
     }
 
     private boolean hasCyberTruck(int lane) {
+        // Mengirimkan true jika terdapat cybertruck pada lane 
+        // False jika tidak
         int block = myCar.position.block;
         List<Lane[]> map = gameState.lanes;
         int startBlock = map.get(0)[0].position.block;
@@ -163,17 +169,26 @@ public class Bot {
     }
 
     private boolean checkEmpRange() {
+        // Mengirimkan true jika jarak mobil musuh cukup dekat untuk di EMP 
+        // False jika tidak
         return myCar.position.lane == opponent.position.lane || opponent.position.lane - myCar.position.lane == 1 || myCar.position.lane - opponent.position.lane == 1;
     }
 
     private boolean obstacles(List<Object> blocks) {
+        // Mengirimkan true jika terdapat obstacle berupa mud, wall, ataupun oil spill
+        // False jika tidak 
         return blocks.contains(Terrain.MUD) || blocks.contains(Terrain.WALL) || blocks.contains(Terrain.OIL_SPILL);
     }
 
     private boolean containPowerUp(List<Object> blocks) {
+        // Mengirimkan true jika terdapat power up pada blocks 
+        // False jika tidak
         return blocks.contains(Terrain.BOOST) || blocks.contains(Terrain.LIZARD) || blocks.contains(Terrain.EMP) || blocks.contains(Terrain.TWEET) || blocks.contains(Terrain.OIL_POWER);
     }
     private boolean definiteCrash(int lane){
+        // Mengirimkan true jika pada round selanjutnya mobil pasti akan menabrak obstacle 
+        // Pengecekan lane tergantung posisi mobil
+        
         if (lane == 1){
             return (hasCyberTruck(myCar.position.lane) || obstacles(getBlocksInFront(myCar.position.lane, myCar.position.block))) && (hasCyberTruck(myCar.position.lane + 1) || obstacles(getBlocksInFront(myCar.position.lane + 1, myCar.position.block)));
         } else if (lane == 2 || lane == 3){
@@ -185,6 +200,8 @@ public class Bot {
 
 
     private int getDamageBlocks(List<Object> blocks, int lane){
+        // Mengirimkan jumlah total damage yang akan diberikan obstacle kepada mobil jika mobile melaju pada lane 
+        // Nilai damage disesuaikan dengan game spec Overdrive
         int damage = 0;
         damage += countTerrain(blocks, Terrain.OIL_SPILL);
         damage += countTerrain(blocks, Terrain.MUD);
@@ -255,7 +272,7 @@ public class Bot {
 
     // Avoiding logic when there is obstacles in front
     private Command changeLane(List<Object> blocks) {
-
+        // Greedy by Obstacle
         if (!obstacles(blocks) && !hasCyberTruck(myCar.position.lane)) {
             return ACCELERATE;
         }
@@ -271,7 +288,7 @@ public class Bot {
                     return LIZARD;
                 }
             }
-            if (definiteCrash(1)){
+            if (definiteCrash(1)){ // Greedy by Damage
                 int damageRight = getDamageBlocks(blocksRight, myCar.position.lane + 1);
                 int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
                 if (damageRight < damageStraight){
@@ -314,7 +331,7 @@ public class Bot {
                     return LIZARD;
                 }
             }
-            if (definiteCrash(getMaxLane())){
+            if (definiteCrash(getMaxLane())){ // Greedy by Damage 
                 int damageLeft = getDamageBlocks(blocksLeft, myCar.position.lane + 1);
                 int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
                 if (damageLeft < damageStraight){
@@ -362,7 +379,7 @@ public class Bot {
                     return LIZARD;
                 }
             }
-            if (myCar.position.lane == 2){
+            if (myCar.position.lane == 2){ // Greedy by Damage
                 if (definiteCrash(2)){
                     int damageRight = getDamageBlocks(blocksRight, myCar.position.lane + 1);
                     int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
@@ -377,7 +394,7 @@ public class Bot {
                     }
                 }
             } else { //lane = 3
-                if (definiteCrash(3)){
+                if (definiteCrash(3)){ // Greedy by Damage 
                     int damageRight = getDamageBlocks(blocksRight, myCar.position.lane + 1);
                     int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
                     int damageLeft = getDamageBlocks(blocksLeft, myCar.position.lane - 1);
