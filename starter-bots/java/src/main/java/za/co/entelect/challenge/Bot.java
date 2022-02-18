@@ -8,6 +8,8 @@ import za.co.entelect.challenge.enums.Terrain;
 
 import java.util.*;
 
+import javax.swing.tree.TreeCellRenderer;
+
 import java.security.SecureRandom;
 
 import static java.lang.Math.max;
@@ -171,7 +173,28 @@ public class Bot {
     private boolean containPowerUp(List<Object> blocks) {
         return blocks.contains(Terrain.BOOST) || blocks.contains(Terrain.LIZARD) || blocks.contains(Terrain.EMP) || blocks.contains(Terrain.TWEET) || blocks.contains(Terrain.OIL_POWER);
     }
+    private boolean definiteCrash(int lane){
+        if (lane == 1){
+            return (hasCyberTruck(myCar.position.lane) || obstacles(getBlocksInFront(myCar.position.lane, myCar.position.block))) && (hasCyberTruck(myCar.position.lane + 1) || obstacles(getBlocksInFront(myCar.position.lane + 1, myCar.position.block)));
+        } else if (lane == 2 || lane == 3){
+            return (hasCyberTruck(myCar.position.lane) || obstacles(getBlocksInFront(myCar.position.lane, myCar.position.block))) && (hasCyberTruck(myCar.position.lane + 1) || obstacles(getBlocksInFront(myCar.position.lane + 1, myCar.position.block))) && (hasCyberTruck(myCar.position.lane - 1) || obstacles(getBlocksInFront(myCar.position.lane-1, myCar.position.block))); 
+        } else {
+            return (hasCyberTruck(myCar.position.lane) || obstacles(getBlocksInFront(myCar.position.lane, myCar.position.block))) && (hasCyberTruck(myCar.position.lane - 1) || obstacles(getBlocksInFront(myCar.position.lane-1, myCar.position.block)));
+        }
+    }
 
+
+    private int getDamageBlocks(List<Object> blocks, int lane){
+        int damage = 0;
+        damage += countTerrain(blocks, Terrain.OIL_SPILL) * 1;
+        damage += countTerrain(blocks, Terrain.MUD) * 1;
+        damage += countTerrain(blocks, Terrain.WALL) * 2;
+        if (hasCyberTruck(lane)){
+            damage += 2;
+        }
+        return damage;
+    }
+   
 //  Find powerup if there is no obstacles
     private Command findPowerUp(List<Object> blocks) {
         if (!obstacles(blocks) && !hasCyberTruck(myCar.position.lane)) {
@@ -243,9 +266,18 @@ public class Bot {
             if (!obstacles(blocksRight) && !hasCyberTruck(myCar.position.lane + 1)) {
                 return TURN_RIGHT;
             }
-            if (countTerrain(blocks, Terrain.MUD) >= 3 || blocks.contains(Terrain.WALL) || hasCyberTruck(myCar.position.lane) || isOppInRange()) {
+            if (countTerrain(blocks, Terrain.MUD) >= 2 || blocks.contains(Terrain.WALL) || hasCyberTruck(myCar.position.lane) || isOppInRange()) {
                 if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
                     return LIZARD;
+                }
+            }
+            if (definiteCrash(1)){
+                int damageRight = getDamageBlocks(blocksRight, myCar.position.lane + 1);
+                int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
+                if (damageRight < damageStraight){
+                    return TURN_RIGHT;
+                } else {
+                    return ACCELERATE;
                 }
             }
             if (hasCyberTruck(myCar.position.lane)) {
@@ -280,6 +312,15 @@ public class Bot {
             if (countTerrain(blocks, Terrain.MUD) >= 3 || blocks.contains(Terrain.WALL) || hasCyberTruck(myCar.position.lane) || isOppInRange()) {
                 if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
                     return LIZARD;
+                }
+            }
+            if (definiteCrash(getMaxLane())){
+                int damageLeft = getDamageBlocks(blocksLeft, myCar.position.lane + 1);
+                int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
+                if (damageLeft < damageStraight){
+                    return TURN_LEFT;
+                } else {
+                    return ACCELERATE;
                 }
             }
             if (hasCyberTruck(myCar.position.lane)) {
@@ -319,6 +360,35 @@ public class Bot {
             if (countTerrain(blocks, Terrain.MUD) >= 3 || blocks.contains(Terrain.WALL) || hasCyberTruck(myCar.position.lane) || isOppInRange()) {
                 if (hasPowerUp(PowerUps.LIZARD, myCar.powerups)) {
                     return LIZARD;
+                }
+            }
+            if (myCar.position.lane == 2){
+                if (definiteCrash(2)){
+                    int damageRight = getDamageBlocks(blocksRight, myCar.position.lane + 1);
+                    int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
+                    int damageLeft = getDamageBlocks(blocksLeft, myCar.position.lane - 1);
+                    int min = Math.min(Math.min(damageRight, damageLeft), damageStraight);
+                    if (min == damageStraight){
+                        return ACCELERATE;
+                    } else if (min == damageRight){
+                        return TURN_RIGHT;
+                    } else {
+                        return TURN_LEFT;
+                    }
+                }
+            } else { //lane = 3
+                if (definiteCrash(3)){
+                    int damageRight = getDamageBlocks(blocksRight, myCar.position.lane + 1);
+                    int damageStraight = getDamageBlocks(blocks, myCar.position.lane);
+                    int damageLeft = getDamageBlocks(blocksLeft, myCar.position.lane - 1);
+                    int min = Math.min(Math.min(damageRight, damageLeft), damageStraight);
+                    if (min == damageStraight){
+                        return ACCELERATE;
+                    } else if (min == damageRight){
+                        return TURN_RIGHT;
+                    } else {
+                        return TURN_LEFT;
+                    }
                 }
             }
             if (hasCyberTruck(myCar.position.lane) || hasCyberTruck(myCar.position.lane + 1) || hasCyberTruck(myCar.position.lane - 1)) {
@@ -417,7 +487,7 @@ public class Bot {
             }
         }
 
-
+        
 
         return findPowerUp(blocks);
     }
